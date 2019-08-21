@@ -1,0 +1,90 @@
+---
+title: "Rotating image, crop, and read Cyrillic"
+output: html_notebook
+---
+A sample script for rotating, and cropping newspaper images for extracting text.  Note that for multi-column texts, the best solution appears to be to crop each column in succession.
+
+File 1 of 421 complete(!)
+
+```{r}
+library(tidyverse)
+library(stringr)
+library(magick)
+library(tesseract)
+if(is.na(match("rus", tesseract_info()$available)))
+  tesseract_download("rus")
+russian <- tesseract("rus")
+```
+
+
+```{r}
+
+
+filelist <- list.files("./Scans/Processed images", full.names = TRUE)
+
+###Extract metadata from filename
+
+name.date <- str_sub(filelist[1], 43, -10)  #This should work for almost all filenames
+article.title <- "Bear service to the president"            #Title can be entered manually, or cropped and run through OCR
+
+###Read and edit image
+
+image1 <- image_read(filelist[1])
+image_browse(image1)
+
+image_bearb1 <- image_rotate(image1, .5)
+image_browse(image_bearb1)#If this particular image needed rotating
+
+image_bearb2 <- image_crop(image_bearb1, geometry_area(width= 490, height= 952, x_off = 1809, y_off = 2235)) #This syntax is quite unclear, but it works like this
+               #The first two numbers are the x and y cooridinates of the top left pixel of the cropped area
+               #This is given in the window bar of the program Irfan Viewer
+               #The other two numbers give the x length, y-length of the cropped area
+
+image_browse(image_bearb2)
+```
+
+Now the OCR using `tesseract`, update number after 'text' to indicate which column is being scanned.
+
+```{r}
+text4 <- ocr(image_bearb2, engine = russian)
+text4
+
+text4 <- str_replace_all(text4, "[-\n]", "")
+text4
+```
+
+Combine text from columns together if necessary
+
+```{r}
+text.complete <- paste(text1, text2, text3, text4)
+#text.complete <- str_replace_all(text.complete, "[[.]]", ". ")  #If spaces after periods not showing up.
+```
+Sometimes spaces are not appearing after periods, so the `str_replac_all` call is used to add a space after all periods. The `[[.]] is used to call out the punctuation mark '.', which otherwise has a use in the code (i.e. it selects all).
+
+Now it's necessary to save the text in a csv, along with metadata giving the newspaper name and date and article title. To save in csv, I transliterate the Cyrillic into Latin using `stringi`.
+
+```{r}
+data.text <- as_tibble(read.csv("text-dataframe.csv"))
+data.text$text %<>% as.character
+
+text.container <- tibble(text=NA, article.name=NA, newspaper.name.date=NA)
+
+latin.text <- stri_trans_general(text.complete, "cyrillic-latin")
+
+text.container$text[1] <- latin.text
+text.container$newspaper.name.date[1] <- name.date
+text.container$article.name <- article.title
+
+data.text <- rbind(data.text, text.container)
+
+
+write.csv(data.text, "text-dataframe.csv", row.names = FALSE)
+
+
+
+```
+
+Note that when analysing the data, it will be necessary to transliterate back into Cyrillic, using `stri_trans_general(text, "latin-cyrillic")`
+
+
+

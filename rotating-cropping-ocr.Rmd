@@ -4,7 +4,7 @@ output: html_notebook
 ---
 A sample script for rotating, and cropping newspaper images for extracting text.  Note that for multi-column texts, the best solution appears to be to crop each column in succession.
 
-File 9 of 421 complete(!)
+File 28 of 421 complete(!)
 
 ```{r setup}
 library(tidyverse)
@@ -27,13 +27,13 @@ filelist <- list.files("./Scans/Processed images", full.names = TRUE)
 
 ###Read and edit image
 
-image1 <- image_read(filelist[9])
+image1 <- image_read(filelist[28])
 image_browse(image1)
 
 image_bearb1 <- image_rotate(image1, 0)
 image_browse(image_bearb1)#If this particular image needed rotating
 
-image_bearb2 <- image_crop(image_bearb1, geometry_area(width= 1492, height= 2942, x_off = 356, y_off = 342)) #This syntax is quite unclear, but it works like this
+image_bearb2 <- image_crop(image_bearb1, geometry_area(width= 800, height= 2015, x_off = 2368, y_off = 370)) #This syntax is quite unclear, but it works like this
                #The first two numbers are the x and y cooridinates of the top left pixel of the cropped area
                #This is given in the window bar of the program Irfan Viewer
                #The other two numbers give the x length, y-length of the cropped area
@@ -43,7 +43,7 @@ image_browse(image_bearb2)
 ###Extract metadata from filename
 
 name.date <- str_sub(filelist[1], 43, -10)  #This should work for almost all filenames
-article.title <- "Who won the elections?"            #Title can be entered manually, or cropped and run through OCR
+article.title <- "Gentlemen donors"            #Title can be entered manually, or cropped and run through OCR
 
 ```
 
@@ -53,14 +53,14 @@ Now the OCR using `tesseract`, update number after 'text' to indicate which colu
 text <- ocr(image_bearb2, engine = russian)
 text
 
-text <- str_replace_all(text, "[-\n]", "")
-text
+text4 <- str_replace_all(text, "[-\n]", "")
+text4
 ```
 
 Combine text from columns together if necessary
 
 ```{r}
-text.complete <- paste(text1, text2, text3)
+text.complete <- paste(text1, text2, text3, text4)
 #text.complete <- str_replace_all(text.complete, "[[.]]", ". ")  #If spaces after periods not showing up.
 ```
 Sometimes spaces are not appearing after periods, so the `str_replac_all` call is used to add a space after all periods. The `[[.]] is used to call out the punctuation mark '.', which otherwise has a use in the code (i.e. it selects all).
